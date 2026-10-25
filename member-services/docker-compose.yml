@@ -1,0 +1,61 @@
+# Member services for the practice lab.
+#
+# Prerequisites:
+#   1. ./gradlew buildAll        (produces build/libs/<name>-0.1.0.jar)
+#   2. infra/v7 stack running    (creates the external xroad-network)
+#
+# Host ports follow docs/x-road/06-lab-topology.md (4710/4711) so they do not
+# collide with the demo information systems kept in infra/v7 (isopenapi owns
+# 4700). Inside the network both apps listen on 8080.
+#
+# Health: both images define HEALTHCHECK -> GET /actuator/health.
+
+name: xroad-lab-members
+
+services:
+  moc-registry:
+    build:
+      context: ./moc-registry
+      args:
+        JAR_FILE: build/libs/moc-registry-0.1.0.jar
+    image: xroad-lab/moc-registry:0.1.0
+    container_name: moc-registry
+    ports:
+      - "4711:8080"
+    environment:
+      # The app defaults to 8081 on the host so it does not clash with the
+      # portal's 8080. Inside a container each app gets its own network
+      # namespace, so both use 8080 and the Security Server URL stays
+      # http://moc-registry:8080/api.
+      SERVER_PORT: "8080"
+    networks:
+      - xroad-network
+
+  sme-cu-portal:
+    build:
+      context: ./sme-cu-portal
+      args:
+        JAR_FILE: build/libs/sme-cu-portal-0.1.0.jar
+    image: xroad-lab/sme-cu-portal:0.1.0
+    container_name: sme-cu-portal
+    ports:
+      - "4710:8080"
+    environment:
+      # Direct mode by default. X-Road mode is enabled per-command in step 15:
+      #   PORTAL_XROAD_ENABLED=true docker compose up -d --force-recreate sme-cu-portal
+      PORTAL_XROAD_ENABLED: ${PORTAL_XROAD_ENABLED:-false}
+      PORTAL_PROVIDER_BASE_URL: ${PORTAL_PROVIDER_BASE_URL:-http://moc-registry:8080/api}
+      # Container port 8080, not the host-published 4210.
+      PORTAL_XROAD_SECURITY_SERVER_URL: ${PORTAL_XROAD_SECURITY_SERVER_URL:-http://ss-smecu:8080}
+      PORTAL_XROAD_CLIENT_ID: ${PORTAL_XROAD_CLIENT_ID:-DEV/BIZ/SME-CU/PORTAL}
+      PORTAL_XROAD_SERVICE_PATH: ${PORTAL_XROAD_SERVICE_PATH:-/r1/DEV/GOV/MOC/REGISTRY/businessLookup}
+    depends_on:
+      moc-registry:
+        condition: service_healthy
+    networks:
+      - xroad-network
+
+networks:
+  # Created by infra/v7/compose.yaml. Not owned by this file.
+  xroad-network:
+    external: true

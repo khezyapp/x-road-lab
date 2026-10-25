@@ -1,0 +1,18 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: sme-cu-portal
+
+portal:
+  provider:
+    # Direct mode (default): call the MOC app without X-Road.
+    base-url: http://localhost:8081/api
+  xroad:
+    # Enable with: ./gradlew bootRun --args='--portal.xroad.enabled=true'
+    # or env: PORTAL_XROAD_ENABLED=true
+    enabled: false
+    security-server-url: http://localhost:4310
+    client-id: DEV/BIZ/SME-CU/PORTAL
+    service-path: /r1/DEV/GOV/MOC/REGISTRY/businessLookup

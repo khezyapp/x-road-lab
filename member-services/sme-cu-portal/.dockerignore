@@ -1,0 +1,5 @@
+# The only thing the build stage needs is the executable jar.
+*
+!build
+!build/libs
+!build/libs/*.jar

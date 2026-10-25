@@ -1,0 +1,24 @@
+// Composite-build aggregation only. The services are independent builds.
+// Run both test suites: ./gradlew testAll
+// Build both jars:      ./gradlew buildAll
+
+tasks.register("buildAll") {
+    group = "build"
+    description = "Build both member services (includes tests)."
+    dependsOn gradle.includedBuild("moc-registry").task(":build")
+    dependsOn gradle.includedBuild("sme-cu-portal").task(":build")
+}
+
+tasks.register("testAll") {
+    group = "verification"
+    description = "Run the test suites of both member services."
+    dependsOn gradle.includedBuild("moc-registry").task(":test")
+    dependsOn gradle.includedBuild("sme-cu-portal").task(":test")
+}
+
+tasks.register("cleanAll") {
+    group = "build"
+    description = "Clean both member services (removes build/libs)."
+    dependsOn gradle.includedBuild("moc-registry").task(":clean")
+    dependsOn gradle.includedBuild("sme-cu-portal").task(":clean")
+}

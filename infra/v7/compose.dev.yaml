@@ -1,0 +1,97 @@
+# Host-port overrides for local development.
+# Rules:
+# 1. Each container has its own port range. Ex: 4100-4199, 4200-4299, etc.
+# 2. Inside the Docker network every service still listens on its internal port.
+#    Security Server UIs/APIs: 4000. Proxies: 8080.
+# 3. 4700-4799 is reserved for the lab's Spring Boot services
+#    (sme-cu-portal 4710, moc-registry 4711).
+
+services:
+  cs:
+    container_name: cs
+    environment:
+      - XROAD_TOKEN_PIN=Secret1234
+    ports:
+      - "4100:4000" # Frontend
+      - "4120:5432" # Database
+      - "4190:9950" # Admin debug
+      - "4191:9951" # Management debug
+      - "4192:9952" # Registration debug
+      - "4193:9953" # Conf Client debug
+      - "4194:9994" # Signer debug port
+    networks:
+      - xroad-network
+  ss-smecu:
+    container_name: ss-smecu
+    environment:
+      - XROAD_TOKEN_PIN=Secret1234
+    ports:
+      - "4200:4000" # Frontend
+      - "4210:8080" # Proxy (consumer calls go here)
+      - "4220:5432" # Database
+      - "4290:9999" # Proxy debug port
+      - "4291:9998" # Signer debug port
+      - "4292:9997" # Proxy UI debug port
+      - "4293:9996" # Conf Client debug
+      - "4299:4299" # Proxy JMX port
+      - "4298:4298" # Signer JMX port
+    networks:
+      - xroad-network
+  ss-moc:
+    container_name: ss-moc
+    environment:
+      - XROAD_TOKEN_0_PIN=Secret1234
+      - XROAD_TOKEN_31_PIN=Secret1234
+    ports:
+      - "4300:4000" # Frontend
+      - "4310:8080" # Proxy
+      - "4320:5432" # Database
+      - "4390:9999" # Proxy debug port
+      - "4391:9998" # Signer debug port
+      - "4392:9997" # Proxy UI debug port
+      - "4393:9996" # Conf Client debug
+      - "4399:4399" # Proxy JMX port
+      - "4398:4398" # Signer JMX port
+    networks:
+      - xroad-network
+    entrypoint: [ "/usr/local/bin/init-token-and-run-entrypoint.sh" ]
+    volumes:
+      - ./ss-moc/init-token-and-run-entrypoint.sh:/usr/local/bin/init-token-and-run-entrypoint.sh:ro
+  testca:
+    container_name: testca
+    ports:
+      - "4400:8888" # Test CA web form: http://localhost:4400/
+      - "4403:9998"
+    networks:
+      - xroad-network
+  isopenapi:
+    container_name: isopenapi
+    ports:
+      - "4700:8080"
+    networks:
+      - xroad-network
+  isrest:
+    container_name: isrest
+    ports:
+      - "4500:8080"
+    networks:
+      - xroad-network
+  issoap:
+    container_name: issoap
+    ports:
+      - "4600:8080"
+    networks:
+      - xroad-network
+  mailpit:
+    container_name: mailpit
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    networks:
+      - xroad-network
+networks:
+  # Explicitly named so containers outside this compose file (the member
+  # services) can join it.
+  xroad-network:
+    name: xroad-network
+    driver: bridge

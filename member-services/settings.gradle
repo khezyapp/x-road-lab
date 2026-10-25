@@ -1,0 +1,8 @@
+rootProject.name = "member-services"
+
+// Composite build: each member service is an independent Gradle build.
+// Build all:   ./gradlew buildAll
+// Run one:     ./gradlew -p moc-registry bootRun
+//              ./gradlew -p sme-cu-portal bootRun
+includeBuild("moc-registry")
+includeBuild("sme-cu-portal")

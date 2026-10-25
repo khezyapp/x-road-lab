@@ -1,0 +1,131 @@
+# Lab-owned copy of the X-Road 7.8.3 development stack.
+#
+# Differences from upstream (Docker/xrd-dev-stack at tag 7.8.3):
+#   - Security Servers are named after the organization they belong to:
+#       ss0 -> ss-smecu   (member DEV/BIZ/SME-CU, subsystem PORTAL)
+#       ss1 -> ss-moc     (member DEV/GOV/MOC,     subsystem REGISTRY)
+#   - The `hurl` service and local-dev-run.sh are removed. The hurl build
+#     context (../../development/hurl) breaks outside the upstream tree, and
+#     `--initialize` would create the demo members we are trying to replace.
+#   - isrest/isopenapi/issoap/mailpit are kept for comparison and debugging.
+#     Their demo members do not exist in this lab's Central Server, so they are
+#     inert unless you register them yourself.
+#   - Images are pinned by digest in .env.
+#   - A top-level project name keeps volume names predictable.
+#
+# Usage: see practice-lab/03-start-cs.md (never run local-dev-run.sh in here).
+
+name: xrd-lab
+
+services:
+  cs:
+    image: ${CS_IMG}
+    deploy:
+      resources:
+        reservations:
+          memory: 512M
+        limits:
+          memory: 2560M
+    healthcheck:
+      interval: 5s
+      retries: 40
+      test: [ "CMD", "curl", "-f", "-k", "https://localhost:4000" ]
+  # SME-CU Security Server (was ss0)
+  ss-smecu:
+    image: ${SS_IMG}
+    environment:
+      - PROXY_JMX_PORT=4299
+      - SIGNER_JMX_PORT=4298
+    deploy:
+      resources:
+        reservations:
+          memory: 512M
+        limits:
+          memory: 2560M
+    healthcheck:
+      interval: 5s
+      retries: 40
+      test: [ "CMD", "curl", "-f", "-k", "https://localhost:4000" ]
+  # MOC Security Server (was ss1)
+  ss-moc:
+    image: ${SS_IMG}
+    environment:
+      - PROXY_JMX_PORT=4399
+      - SIGNER_JMX_PORT=4398
+    deploy:
+      resources:
+        reservations:
+          memory: 512M
+        limits:
+          memory: 2560M
+    healthcheck:
+      interval: 5s
+      retries: 40
+      test: [ "CMD", "curl", "-f", "-k", "https://localhost:4000" ]
+  testca:
+    image: ${CA_IMG}
+    deploy:
+      resources:
+        reservations:
+          memory: 32M
+        limits:
+          memory: 512M
+    healthcheck:
+      interval: 5s
+      retries: 40
+      test: [ "CMD", "curl", "-f", "-k", "http://localhost:8888/testca/certs" ]
+    volumes:
+      - ca-volume:/home/ca/certs
+  mailpit:
+    image: ${MAILPIT_IMG}
+    restart: unless-stopped
+    volumes:
+      - ./testmail:/data
+    environment:
+      MP_MAX_MESSAGES: 5000
+      MP_DATABASE: /data/mailpit.db
+      MP_SMTP_REQUIRE_STARTTLS: 1
+      MP_SMTP_TLS_CERT: /data/mailpit_cert.pem
+      MP_SMTP_TLS_KEY: /data/mailpit_key.pem
+      MP_SMTP_AUTH_FILE: /data/password_file
+  isopenapi:
+    image: ${IS_OPENAPI_IMG}
+    deploy:
+      resources:
+        reservations:
+          memory: 64M
+        limits:
+          memory: 512M
+    healthcheck:
+      interval: 5s
+      retries: 40
+      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:8080/v3/api-docs" ]
+  issoap:
+    image: ${IS_SOAP_IMG}
+    deploy:
+      resources:
+        reservations:
+          memory: 64M
+        limits:
+          memory: 512M
+    healthcheck:
+      interval: 5s
+      retries: 40
+      test: [ "CMD", "curl", "-f", "-k", "http://localhost:8080/example-adapter/Endpoint?wsdl" ]
+    entrypoint: [ "java", "-Xms64m", "-Xmx256m", "-jar", "/example-adapter.war" ]
+  isrest:
+    image: ${IS_REST_IMG}
+    deploy:
+      resources:
+        reservations:
+          memory: 64M
+        limits:
+          memory: 256M
+    healthcheck:
+      interval: 5s
+      retries: 40
+      test: [ "CMD", "curl", "-f", "-k", "http://localhost:8080/__admin/health" ]
+    volumes:
+      - ./wiremock_mappings:/home/wiremock/mappings
+volumes:
+  ca-volume:
