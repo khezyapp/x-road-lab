@@ -1,0 +1,44 @@
+# Dependencies and build output
+node_modules/
+.gradle/
+build/
+out/
+*.class
+
+# VitePress build output and cache
+docs/.vitepress/dist/
+docs/.vitepress/cache/
+
+# Lab secrets and local state (see AGENTS.md)
+.env
+.env.*
+!.env.example
+ca-certs/
+*.key
+*.pem
+*.p12
+*.jks
+*.p8
+*.crt
+*.csr
+infra/v7/testmail/password_file
+
+# Extracted upstream reference copy and scratch captures
+/tmp/
+
+# Logs and JVM crash dumps
+*.log
+logs/
+hs_err_pid*
+replay_pid*
+
+# IDE, editor, and OS files
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
